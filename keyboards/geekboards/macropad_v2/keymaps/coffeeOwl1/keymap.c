@@ -29,11 +29,14 @@
 #define FIND LGUI(KC_F)
 #define WINDOW_LEFT_HALF LALT(LGUI(KC_LEFT))
 #define WINDOW_RIGHT_HALF LALT(LGUI(KC_RGHT))
-#define WINDOW_CENTER LCTL(LALT(LSFT(LGUI(KC_C))))
+#define WINDOW_CENTER LALT(LGUI(KC_C))
+// #define WINDOW_CENTER LCTL(LALT(LSFT(LGUI(KC_C))))
 #define SUPER_TAB LGUI(KC_TAB)
 #define MISSION_CONTROL LCTL(KC_UP)
 
 enum {
+    FBSOURCE_CODE_SEARCH,
+    TEST_SEARCH,
     INTERN_CODE_SEARCH,
     DEL_LINE
 };
@@ -44,12 +47,12 @@ const uint16_t keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         SCREEN_LEFT, TAB_LEFT, TAB_RIGHT, SCREEN_RIGHT
     ),
     [_SL] = LAYOUT_ortho_2x4(
-        KC_ESC, TAB_UNCLOSE, INTERN_CODE_SEARCH, KC_BSPC,
-        WINDOW_LEFT_HALF, SUPER_TAB, MISSION_CONTROL, WINDOW_RIGHT_HALF
+        KC_ESC, TAB_UNCLOSE, MISSION_CONTROL, DEL_LINE, //KC_BSPC,
+        OSL(_TL), WINDOW_LEFT_HALF, WINDOW_CENTER, WINDOW_RIGHT_HALF
     ),
     [_TL] = LAYOUT_ortho_2x4(
-        KC_TRNS, KC_TRNS, KC_TRNS, DEL_LINE,
-        KC_TRNS, WINDOW_LEFT_HALF, WINDOW_CENTER, WINDOW_RIGHT_HALF
+        KC_ESC, TEST_SEARCH, FBSOURCE_CODE_SEARCH, INTERN_CODE_SEARCH,
+        KC_TRNS, SUPER_TAB, KC_D, DEL_LINE
     )
 };
 // TODO add delete line
@@ -78,24 +81,40 @@ layer_state_t layer_state_set_user(layer_state_t state) {
   return state;
 }
 
+void searchMacro(char prefix[]) {
+    // Open new tab, type search prefix, paste and enter
+    // Only works when chrome is in focus
+    register_code(KC_LGUI);
+    register_code(KC_T);
+    unregister_code(KC_LGUI);
+    unregister_code(KC_T);
+    SEND_STRING(prefix);
+    register_code(KC_LGUI);
+    register_code(KC_V);
+    unregister_code(KC_LGUI);
+    unregister_code(KC_V);
+    register_code(KC_ENT);
+    unregister_code(KC_ENT);
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     #ifdef CONSOLE_ENABLE
     // uprintf("KL: kc: %u, col: %2u, row: %2u, pressed: %u, time: %5u, int: %u, count: %u\n", keycode, record->event.key.col, record->event.key.row, record->event.pressed, record->event.time, record->tap.interrupted, record->tap.count);
     #endif
     switch (keycode) {
+        case FBSOURCE_CODE_SEARCH:
+            if (record->event.pressed) {
+                searchMacro("xbgs ");
+            }
+            return false;
+        case TEST_SEARCH:
+            if (record->event.pressed) {
+                searchMacro("test ");
+            }
+            return false;
         case INTERN_CODE_SEARCH:
             if (record->event.pressed) {
-                register_code(KC_LGUI);
-                register_code(KC_T);
-                unregister_code(KC_LGUI);
-                unregister_code(KC_T);
-                SEND_STRING("xbgs ");
-                register_code(KC_LGUI);
-                register_code(KC_V);
-                unregister_code(KC_LGUI);
-                unregister_code(KC_V);
-                register_code(KC_ENT);
-                unregister_code(KC_ENT);
+                searchMacro("zbgs ");
             }
             return false;
         case DEL_LINE:
@@ -115,6 +134,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 unregister_code(KC_LSFT);
                 unregister_code(KC_LGUI);
                 // Delete
+                tap_code(KC_BSPC);
                 tap_code(KC_BSPC);
             }
             return false;
